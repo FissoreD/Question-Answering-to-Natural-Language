@@ -1,6 +1,66 @@
+from nltk.corpus import brown
+import gensim
+import os
+import functools
+import re
+
+
+def create_model():
+    model = gensim.models.Word2Vec(brown.sents())
+    model.save('brown.embedding')
+
+
+def split_on_capital_letter(s: str):
+    return "".join([i if i.islower() else (' ' + i.lower()) for i in s])
+
+
+def read_model():
+    if not os.path.exists('./brown.embedding'):
+        create_model()
+    return gensim.models.Word2Vec.load('brown.embedding')
+
+
+def similarity(model, wordA, wordB):
+    wordBs = wordB.split()
+    if len(wordBs) == 1:
+        try:
+            return model.wv.similarity(wordA, wordBs[0])
+        except KeyError:
+            return float(0)
+    x = [similarity(model, wordA, i) for i in wordBs]
+    return 1 if max(x) > 0.999 else sum(x)/len(x)
+
+
+def map_similarity_ordered(m):
+    return sorted(list(m), key=lambda x: x[1], reverse=True)
+
+
+def map_similarity(model, wordA, word_list):
+    return map_similarity_ordered(map(lambda wordB: (wordB, similarity(model, wordA, wordB)), word_list))
+
+
+def most_similar(m):
+    return functools.reduce(lambda a, b: a if a[1] > b[1] else b, m)
+
+
+wh_question = 'where,when,what,how,which'.split(',')
+
+
 def read_input():
     return input().strip().split()
 
 
 def work_input():
     return
+
+
+def clean_input(str):
+    return
+
+
+if __name__ == '__main__':
+    create_model()
+    m = read_model()
+    print(similarity(m, 'world', 'world'))
+    print(map_similarity_ordered(map_similarity(m, 'president',
+          ['date', 'leader', 'year', 'apple'])))
