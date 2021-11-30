@@ -72,7 +72,6 @@ def parse_sentence(str):
         if cla == None:
             continue
         word_class = cla.text.strip()
-        print((w, word_class))
         if 'noun' in word_class:
             res.append(w)
         elif 'abbreviation' in word_class:
@@ -100,8 +99,6 @@ def parse_sentence(str):
 #     return res
 
 if __name__ == '__main__':
-    print(parse_sentence(
-        "'this is a sentence which only aims to confirm the ufo is a noun such as house or horse"))
     # create_model()
     # m = read_model()
     # print(similarity(m, 'world', 'world'))
