@@ -72,9 +72,11 @@ def parse_sentence(str):
         if cla == None:
             continue
         word_class = cla.text.strip()
-        if 'noun' in word_class:
+        if word_class[-1] == ',':
+            word_class = word_class[:-1]
+        if word_class == 'noun':
             res.append(w)
-        elif 'abbreviation' in word_class:
+        elif word_class == 'abbreviation':
             defi = soup.find('div', attrs={"value": "1"}).get_text().replace(
                 ':', '.').split('.')[0]
             res.append(defi)
@@ -99,6 +101,8 @@ def parse_sentence(str):
 #     return res
 
 if __name__ == '__main__':
+    print(parse_sentence(
+        "'this is a sentence which only aims to confirm the ufo is a noun such as house or horse USA"))
     # create_model()
     # m = read_model()
     # print(similarity(m, 'world', 'world'))
