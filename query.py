@@ -7,11 +7,19 @@ import re
 # %%
 keyCol = 'keyCol'
 keyVal = 'value'
-
-
-def sparql_to_csv(l):
-    hd = [keyCol, keyVal]
-    return pd.DataFrame(l, columns=hd)
+info_to_remove = [
+    'subject',
+    'abstract',
+    'owl #same as',
+    'rdf -schema #comment',
+    'rdf -schema #label',
+    'wiki page i d',
+    ' 2 2 -rdf -syntax -ns #type',
+    'wiki page wiki link',
+    'wiki page revision i d',
+    'wiki page external link',
+    'wiki page uses template'
+]
 
 
 def create_sparql():
@@ -53,14 +61,14 @@ def get_all_info(word):
     res = json_to_dico(send_query(query), keyCol, keyVal)
     if 'wiki page redirects' in res:
         res = get_all_info(res['wiki page redirects'][0])
-    if 'abstract' in res:
-        res.pop('abstract')
+    for i in info_to_remove:
+        res.pop(i, None)
     return res
 
 
-def write_to_file(frame):
+def write_to_file(s):
     with open('result.json', 'w') as fp:
-        json.dump(frame, fp)
+        json.dump(s, fp, indent=4)
 
 
 def get_lines_from_word(word, dico, a, b):
@@ -77,38 +85,25 @@ def get_lines_from_word(word, dico, a, b):
             L.add(col2.split('/')[-1])
     return L
 
-# def query_for_properties(category):
-#     string = "select distinct * where {?property rdfs:domain <http://dbpedia.org/ontology/" + \
-#         category+"> ; rdfs:label ?l .}"
-#     return send_query(string)
-
-
-# def get_entity_of_type(word):
-#     string = 'select distinct * where {?info rdfs:label "' + \
-#         word+'"@en; gold:hypernym ?hypernym .}'
-#     return send_query(string)
-
-
-def get_info():
-    return send_query("""
-    PREFIX rdfs: <http://www.w3.org/2000/01/rdf-schema#>
-    PREFIX dbp: <http://dbpedia.org/property/>
-    SELECT distinct ?person WHERE
-    {
-        ?person dbo:birthPlace <http://dbpedia.org/resource/Paris> .
-    }
-    """)
-
 
 # %%
+def find_association(a, b):
+    global model
+    infos = get_all_info(a)
+    m = read_input.map_similarity(model, b.lower(), infos.keys())
+    return m, infos
 
 
-if __name__ == '__main__':
-    pd.set_option('display.max_rows', None)
-    infos = get_all_info('USA')
-    model = read_input.read_model()
-    m = read_input.map_similarity(model, 'president', infos.keys())
-    write_to_file(infos)
+def main(a, b):
+    global model
+    r1, infos1 = find_association(a, b)
+    r2, infos2 = find_association(b, a)
+    L1 = [r1[i] for i in range(min(len(r1), 5))]
+    L2 = [r2[i] for i in range(min(len(r2), 5))]
+    return (L1, infos1) if sum([i[1] for i in L1]) > sum([i[1] for i in L2]) else (L2, infos2)
+
+
+def myPrint1(m, infos):
     L = []
     for i in range(min(len(m), 5)):
         L.append(
@@ -117,11 +112,14 @@ if __name__ == '__main__':
                 "value": m[i][0],
                 "res": [i for i in set(infos[m[i][0]]) if i != ""]
             })
-    print(json.dumps(L, indent=4))
+    return L
 
-# %%
-"""
-    TODO:
-        retravailler les synonymes dans le cas par exemple de
-        president et leaderName
-"""
+
+if __name__ == '__main__':
+    pd.set_option('display.max_rows', None)
+    model = read_input.read_model()
+    a, b = main('is', 'France')
+    x = myPrint1(a, b)
+    write_to_file(x)
+    print(json.dumps(x, indent=4))
+    
