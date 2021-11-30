@@ -104,7 +104,7 @@ class query:
     def write_res(self):
         file_name = output_folder + self.domain + '_res.json'
         with open(file_name, 'w') as fp:
-            json.dump(self.best_match, fp, indent=4)
+            fp.write(str(self))
 
     def __str__(self, precision=5) -> str:
         bm = self.best_match
@@ -123,7 +123,7 @@ class main:
         self.o1.initiate()
         self.o2.initiate()
 
-    def best_result(self):
+    def best_result(self) -> query:
         s1 = sum([i['probability'] for i in self.o1.best_match])
         s2 = sum([i['probability'] for i in self.o2.best_match])
         return self.o1 if s1 > s2 else self.o2
