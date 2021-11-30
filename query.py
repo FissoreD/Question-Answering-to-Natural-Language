@@ -6,6 +6,7 @@ import json
 import read_input
 import re
 # %%
+output_folder = './output/'
 keyCol = 'keyCol'
 keyVal = 'value'
 info_to_remove = [
@@ -41,13 +42,14 @@ def json_to_dico(json, a, b):
     return D
 
 
-def send_query(query):
+def send_query(query, title):
     print(query)
     sparql = create_sparql()
     sparql.setQuery(query)
 
     sparql.setReturnFormat(JSON)
     results = sparql.query().convert()
+    write_to_file(results, title)
     return results
 
 
@@ -59,7 +61,7 @@ def get_all_info(word):
             <{link}>  ?{keyCol}  ?{keyVal} .
         }}"""
     # print(query)
-    res = json_to_dico(send_query(query), keyCol, keyVal)
+    res = json_to_dico(send_query(query, word), keyCol, keyVal)
     if 'wiki page redirects' in res:
         res = get_all_info(res['wiki page redirects'][0])
     for i in info_to_remove:
@@ -67,8 +69,8 @@ def get_all_info(word):
     return res
 
 
-def write_to_file(s):
-    with open('result.json', 'w') as fp:
+def write_to_file(s, file_name):
+    with open(output_folder + file_name + ('' if 'json' in file_name else '.json'), 'w') as fp:
         json.dump(s, fp, indent=4)
 
 
@@ -118,18 +120,18 @@ def myPrint1(m, infos):
 
 if __name__ == '__main__':
     my_questions = ["What is the population of Italy ?",
-                    "What is the capital of France ?", "What is the date of Christmas ?"]
+                    "What is the capital of France ?", "What is the date of Christmas ?", "Who is the president of France"]
 
     pd.set_option('display.max_rows', None)
     model = read_input.read_model()
 
-    key_words = read_input.parse_sentence(my_questions[2])
+    key_words = read_input.parse_sentence(my_questions[3])
 
     if (len(key_words) != 2):
         print("This kind of question is not already supported")
         sys.exit()
 
     a, b = main(key_words[0], key_words[1].capitalize())
+    #a, b = main('president', 'France')
     x = myPrint1(a, b)
-    write_to_file(x)
     print(json.dumps(x, indent=4))

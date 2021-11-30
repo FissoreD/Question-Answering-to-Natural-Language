@@ -1,0 +1,38 @@
+[
+    {
+        "probability": "100.0 %",
+        "value": "capital",
+        "res": [
+            "http://dbpedia.org/resource/Paris"
+        ]
+    },
+    {
+        "probability": "92.639 %",
+        "value": "electricity",
+        "res": [
+            "230"
+        ]
+    },
+    {
+        "probability": "89.91 %",
+        "value": "population label",
+        "res": [
+            "Metropolitan France, estimate",
+            "Density"
+        ]
+    },
+    {
+        "probability": "89.754 %",
+        "value": "languages",
+        "res": [
+            "French"
+        ]
+    },
+    {
+        "probability": "88.648 %",
+        "value": "symbol width",
+        "res": [
+            "75"
+        ]
+    }
+]
