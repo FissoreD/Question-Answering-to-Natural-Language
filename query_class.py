@@ -87,12 +87,12 @@ class query:
 
     def calc_best_match(self):
         L = []
-        for i in range(min(len(self.similarity), 5)):
+        for i in self.similarity:
             L.append(
                 {
-                    "probability": self.similarity[i][1],
-                    "value": self.similarity[i][0],
-                    "res": [i for i in set(self.page_dico[self.similarity[i][0]]) if i != ""]
+                    "probability": i[1],
+                    "value": i[0],
+                    "res": [j for j in set(self.page_dico[i[0]]) if j != ""]
                 })
         self.best_match = L
 
@@ -106,8 +106,9 @@ class query:
         with open(file_name, 'w') as fp:
             json.dump(self.best_match, fp, indent=4)
 
-    def __str__(self) -> str:
-        return json.dumps([{x: (e[x] if x != 'probability' else str(round(e[x], 2))) for x in e} for e in m.o1.best_match], indent=2)
+    def __str__(self, precision=5) -> str:
+        bm = self.best_match
+        return json.dumps([{x: (bm[e][x] if x != 'probability' else str(round(bm[e][x], 2))) for x in bm[e]} for e in range(precision)], indent=2)
 
     def __repr__(self) -> str:
         return self.__str__()
