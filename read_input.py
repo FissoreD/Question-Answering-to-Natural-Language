@@ -69,8 +69,15 @@ def parse_sentence(str):
                          w + "#", allow_redirects=False)
         soup = BeautifulSoup(r.text, 'html.parser')
         cla = soup.find('span', {'class': 'luna-pos'})
-        if cla != None and cla.text.strip() == 'noun':
+        if cla == None:
+            continue
+        word_class = cla.text.strip()
+        if word_class == 'noun':
             res.append(w)
+        elif 'abbreviation' in word_class:
+            defi = soup.find('div', attrs={"value": "1"}).get_text().replace(
+                ':', '.').split('.')[0]
+            res.append(defi)
     return res
 
 
@@ -92,8 +99,9 @@ def parse_sentence(str):
 #     return res
 
 if __name__ == '__main__':
-    create_model()
-    m = read_model()
-    print(similarity(m, 'world', 'world'))
-    print(map_similarity_ordered(map_similarity(m, 'president',
-          ['date', 'leader', 'year', 'apple'])))
+    print(parse_sentence("ufo"))
+    # create_model()
+    # m = read_model()
+    # print(similarity(m, 'world', 'world'))
+    # print(map_similarity_ordered(map_similarity(m, 'president',
+    #       ['date', 'leader', 'year', 'apple'])))
