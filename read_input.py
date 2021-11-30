@@ -2,7 +2,10 @@ from nltk.corpus import brown
 import gensim
 import os
 import functools
-import re
+#from PyDictionary import PyDictionary
+from bs4 import BeautifulSoup
+import requests
+#dictionary = PyDictionary()
 
 
 def create_model():
@@ -57,6 +60,36 @@ def work_input():
 def clean_input(str):
     return
 
+
+def parse_sentence(str):
+    res = []
+    words = str.lower().strip().split()
+    for w in words:
+        r = requests.get("https://www.dictionary.com/browse/" +
+                         w + "#", allow_redirects=False)
+        soup = BeautifulSoup(r.text, 'html.parser')
+        cla = soup.find('span', {'class': 'luna-pos'})
+        if cla != None and cla.text.strip() == 'noun':
+            res.append(w)
+    return res
+
+
+# def parse_sentence2():
+#     words = input().strip().split()
+
+#     res = []
+#     for w in words:
+#         print(w)
+#         try:
+#             d = dictionary.meaning(w, disable_errors=True)
+#             if d != None:
+#                 r = d.keys()
+#                 if 'Noun' in r:
+#                     res.append(w)
+#         except:
+#             pass
+
+#     return res
 
 if __name__ == '__main__':
     create_model()

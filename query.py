@@ -1,3 +1,4 @@
+import sys
 import re
 from SPARQLWrapper import SPARQLWrapper, JSON
 import pandas as pd
@@ -116,10 +117,19 @@ def myPrint1(m, infos):
 
 
 if __name__ == '__main__':
+    my_questions = ["What is the population of Italy ?",
+                    "What is the capital of France ?", "What is the date of Christmas ?"]
+
     pd.set_option('display.max_rows', None)
     model = read_input.read_model()
-    a, b = main('is', 'France')
+
+    key_words = read_input.parse_sentence(my_questions[2])
+
+    if (len(key_words) != 2):
+        print("This kind of question is not already supported")
+        sys.exit()
+
+    a, b = main(key_words[0], key_words[1].capitalize())
     x = myPrint1(a, b)
     write_to_file(x)
     print(json.dumps(x, indent=4))
-    
