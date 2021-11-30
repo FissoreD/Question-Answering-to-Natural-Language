@@ -3,6 +3,7 @@ from SPARQLWrapper import SPARQLWrapper, JSON
 from gensim.utils import identity
 import pandas as pd
 import json
+from query import create_sparql, send_query
 import read_input
 import re
 # %%
@@ -74,6 +75,11 @@ class query:
         for elt in list_of_content:
             x, y = read_input.split_on_capital_letter(
                 elt[keyCol][keyVal].split('/')[-1]), elt[keyVal][keyVal]
+            if x == 'wiki page redirects':
+                self.link = y
+                self.query = self.create_query()
+                self.send_query()
+                return self.create_page_dico()
             if x in info_to_remove:
                 continue
             if x in self.page_dico:
@@ -131,5 +137,6 @@ class main:
 
 if __name__ == '__main__':
     model = read_input.read_model()
-    m = main('France', 'capital')
+    a, b = tuple(input('insert 2 words : ').split())
+    m = main(a, b, model)
     print(m.best_result())
