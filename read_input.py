@@ -2,10 +2,10 @@ from nltk.corpus import brown
 import gensim
 import os
 import functools
-#from PyDictionary import PyDictionary
+# from PyDictionary import PyDictionary
 from bs4 import BeautifulSoup
 import requests
-#dictionary = PyDictionary()
+# dictionary = PyDictionary()
 
 
 def create_model():
@@ -26,12 +26,14 @@ def read_model():
 def similarity(model, wordA, wordB):
     wordBs = wordB.split()
     if len(wordBs) == 1:
+        if wordA == wordB:
+            return 1
         try:
             return model.wv.similarity(wordA, wordBs[0])
         except KeyError:
             return float(0)
     x = [similarity(model, wordA, i) for i in wordBs]
-    return 1 if max(x) > 0.999 else sum(x)/len(x)
+    return 1 if max(x) > 0.999 or wordB.replace(' ', '') == wordA else sum(x)/len(x)
 
 
 def map_similarity_ordered(m):
@@ -39,7 +41,7 @@ def map_similarity_ordered(m):
 
 
 def map_similarity(model, wordA, word_list):
-    return map_similarity_ordered(map(lambda wordB: (wordB, similarity(model, wordA, wordB)), word_list))
+    return map_similarity_ordered([i for i in map(lambda wordB: (wordB, similarity(model, wordA, wordB)), word_list) if i[1] > 0.1])
 
 
 def most_similar(m):

@@ -1,16 +1,12 @@
-import re
+import time
 from SPARQLWrapper import SPARQLWrapper, JSON
-from gensim.utils import identity
-import pandas as pd
 import json
-from query import create_sparql, send_query
 import read_input
-import re
 # %%
 output_folder = './output/'
 keyCol = 'keyCol'
 keyVal = 'value'
-info_to_remove = [
+black_list = [
     'subject',
     'abstract',
     'owl #same as',
@@ -19,9 +15,15 @@ info_to_remove = [
     'wiki page i d',
     ' 2 2 -rdf -syntax -ns #type',
     'wiki page wiki link',
+    'wiki page length',
     'wiki page revision i d',
     'wiki page external link',
-    'wiki page uses template'
+    'wiki page uses template',
+    'rdf -schema #see also',
+    'prov #was derived from',
+    'image',
+    'wgs 8 4 _pos #geometry',
+    'point'
 ]
 
 
@@ -36,9 +38,9 @@ class query:
         the class
     """
 
-    def __init__(self, domain, attribute,
+    def __init__(self, domain: str, attribute,
                  model=read_input.read_model()) -> None:
-        self.domain = domain
+        self.domain = domain.replace('"', "")
         self.attribute = attribute.lower()
         self.model = model
         self.sparql = self.create_sparql()
@@ -80,7 +82,7 @@ class query:
                 self.query = self.create_query()
                 self.send_query()
                 return self.create_page_dico()
-            if x in info_to_remove:
+            if x in black_list:
                 continue
             if x in self.page_dico:
                 self.page_dico[x].append(y)
@@ -114,29 +116,74 @@ class query:
 
     def __str__(self, precision=5) -> str:
         bm = self.best_match
-        return json.dumps([{x: (bm[e][x] if x != 'probability' else str(round(bm[e][x], 2))) for x in bm[e]} for e in range(precision)], indent=2)
+        return str([f"looking for {self.attribute} in {self.domain}", [{x: (bm[e][x] if x != 'probability' else str(round(bm[e][x], 2))) for x in bm[e]} for e in range(min(precision, len(bm)))]])
 
     def __repr__(self) -> str:
         return self.__str__()
 
 
 class main:
-    def __init__(self, w1: str, w2: str,
+    def __init__(self, w1: list,
                  model=read_input.read_model()) -> None:
         self.model = model
-        self.o1: query = query(w1, w2, model=self.model)
-        self.o2: query = query(w2, w1, model=self.model)
-        self.o1.initiate()
-        self.o2.initiate()
+        self.res = [query(w1.pop().capitalize(), w1.pop(), model=model)]
+        self.res[-1].initiate()
+        # print(self.res[-1])
+        current_lvl: list = []
+        next_lvl: list = []
+        current_lvl.append(self.res[-1])
+        while w1 and current_lvl:
+            current_attribute = w1.pop()
+            while current_lvl:
+                current_object = current_lvl.pop(0)
+                for i in current_object.best_match[:5]:
+                    current_domain_list = i['res']
+                    # Si la liste liée au domain courant à plus
+                    # de 5 élément alors on le considère pas
+                    if len(current_domain_list) > 5:
+                        continue
+                    for current_domain in current_domain_list:
+                        # si le domain courant est un nombre on skip
+                        try:
+                            float(current_domain)
+                            continue
+                        except ValueError:
+                            pass
+                        print(i['value'], current_domain, current_attribute)
+                        o1 = query(current_domain.replace(' ', '_'),
+                                   current_attribute, model=self.model)
+                        o1.initiate()
+                        self.res.append(o1)
+                        next_lvl.append(o1)
+            while next_lvl:
+                current_lvl.append(next_lvl.pop(0))
 
-    def best_result(self) -> query:
-        s1 = sum([i['probability'] for i in self.o1.best_match])
-        s2 = sum([i['probability'] for i in self.o2.best_match])
-        return self.o1 if s1 > s2 else self.o2
+    def get_result(self):
+        return self.res
 
 
 if __name__ == '__main__':
+    print('Charging')
+    t = time.time()
     model = read_input.read_model()
-    a, b = tuple(input('insert 2 words : ').split())
-    m = main(a, b, model)
-    print(m.best_result())
+    inp = read_input.parse_sentence(input('Enter your question : '))
+    print(inp)
+    m = main(inp, model)
+    print(m.get_result())
+    print(time.time() - t)
+
+"""
+todo : 
+    question avec deux reponses :
+        ex : what is the birthdate and the place of birth of joe biden ?
+    question avec implication :
+        ex : What is the birthday of the président of USA ?
+    les deux :
+        ex : what is the birthdate and the birthplace of the president of USA ?
+
+"""
+# %%
+
+"""
+ What is the birthplace of the major of the capital of the country with Paris ?    
+"""
