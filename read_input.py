@@ -69,7 +69,7 @@ def parse_sentence(str):
     words = str.lower().strip().split()
     for w in words:
         r = requests.get("https://www.dictionary.com/browse/" +
-                         w + "#", allow_redirects=False)
+                         w + "#", allow_redirects=True)
         soup = BeautifulSoup(r.text, 'html.parser')
         cla = soup.find('span', {'class': 'luna-pos'})
         if cla == None:
@@ -105,7 +105,7 @@ def parse_sentence(str):
 
 if __name__ == '__main__':
     print(parse_sentence(
-        "'this is a sentence which only aims to confirm the ufo is a noun such as house or horse USA"))
+        "this is a sentence which only aims to confirm the ufo is a noun such as house or horse USA birth-date "))
     # create_model()
     # m = read_model()
     # print(similarity(m, 'world', 'world'))
