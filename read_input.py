@@ -76,12 +76,12 @@ def parse_sentence(str):
         word_class = cla.text.strip()
         if word_class[-1] == ',':
             word_class = word_class[:-1]
-        if word_class == 'noun':
+        if word_class == 'noun' or word_class == 'abbreviation':
             res.append(w)
-        elif word_class == 'abbreviation':
-            defi = soup.find('div', attrs={"value": "1"}).get_text().replace(
-                ':', '.').split('.')[0]
-            res.append(defi)
+        # elif word_class == 'abbreviation':
+        #     # defi = soup.find('div', attrs={"value": "1"}).get_text().replace(
+        #     #     ':', '.').split('.')[0]
+        #     res.append(defi)
     return res
 
 
