@@ -1,5 +1,5 @@
 import time
-from typing import List
+from typing import Dict, List
 from SPARQLWrapper import SPARQLWrapper, JSON
 import json
 import read_input
@@ -31,6 +31,10 @@ black_list = [
 ]
 
 
+def removeHTTP(s: str):
+    return s if 'http' not in s else s.split("/")[-1]
+
+
 class query:
     """
     Class representing a query for dbpedia :
@@ -42,9 +46,11 @@ class query:
         the class
     """
 
-    def __init__(self, domain: str, attribute,
+    def __init__(self, domain: str, attribute, father="", proba=1,
                  model=read_input.read_model()) -> None:
         self.domain = domain.replace('"', "")
+        self.father = father
+        self.proba = proba
         self.attribute = attribute.lower()
         self.model = model
         self.sparql = self.create_sparql()
@@ -100,9 +106,12 @@ class query:
     def calc_best_match(self):
         L = []
         for i in self.similarity:
+            #print(self.proba, i[1], self.proba * i[1])
             L.append(
                 {
-                    "probability": i[1],
+                    # "father": f"{self.father} (:={i[0]})",
+                    "probability": i[1] * self.proba,
+                    "domain": removeHTTP(self.domain),
                     "value": i[0],
                     "res": [j for j in set(self.page_dico[i[0]]) if j != ""]
                 })
@@ -118,9 +127,12 @@ class query:
         with open(file_name, 'w') as fp:
             fp.write(str(self))
 
-    def __str__(self, precision=5) -> str:
+    def __str__(self) -> str:
+        return json.dumps(self.dict_without_float())
+
+    def dict_without_float(self, precision=5):
         bm = self.best_match
-        return json.dumps([f"looking for {self.attribute} in {self.domain}", [{x: (bm[e][x] if x != 'probability' else str(round(bm[e][x], 2))) for x in bm[e]} for e in range(min(precision, len(bm)))]])
+        return [f"looking for {self.attribute} in {self.domain}", [{x: (bm[e][x] if x != 'probability' else str(round(bm[e][x], 2))) for x in bm[e]} for e in range(min(precision, len(bm)))]]
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -131,18 +143,23 @@ class main:
                  model=read_input.read_model()) -> None:
         self.model = model
         self.domain = w1.pop().capitalize()
-        self.res = [query(self.domain, w1.pop(), model=model)]
-        self.res[-1].initiate()
+        first_attribute = w1.pop()
+        self.res = {self.domain: query(
+            self.domain, first_attribute, model=model, father=f"-> {first_attribute}")}
+        self.res[self.domain].initiate()
         # print(self.res[-1])
         current_lvl: list = []
         next_lvl: list = []
-        current_lvl.append(self.res[-1])
+        current_lvl.append((self.res[self.domain], 1, self.domain))
         while w1 and current_lvl:
             current_attribute = w1.pop()
             while current_lvl:
-                current_object = current_lvl.pop(0)
+                current_object, _, father = current_lvl.pop(0)
                 for i in current_object.best_match[:5]:
                     current_domain_list = i['res']
+                    current_proba = i['probability']
+                    # TODO
+                    current_father = f"{father} -> {current_object.attribute}"
                     # Si la liste liée au domain courant à plus
                     # de 5 élément alors on le considère pas
                     if len(current_domain_list) > 5:
@@ -156,16 +173,29 @@ class main:
                             pass
                         print(i['value'], current_domain, current_attribute)
                         o1 = query(current_domain.replace(' ', '_'),
-                                   current_attribute, model=self.model)
+                                   current_attribute, father=current_father, model=self.model, proba=current_proba)
                         o1.initiate()
                         if o1.best_match != []:
-                            self.res.append(o1)
-                        next_lvl.append(o1)
+                            self.res[removeHTTP(current_domain)] = o1
+                        next_lvl.append(
+                            (o1, current_proba, f"{current_father} -> {removeHTTP(current_domain)}"))
             while next_lvl:
                 current_lvl.append(next_lvl.pop(0))
+        self.last_lvl = current_lvl
 
-    def get_result(self) -> List[query]:
-        return self.res
+    def get_result(self):
+        return {i: self.res[i].dict_without_float() for i in self.res}
+
+    def get_last_lvl(self):
+        return [i[0].dict_without_float() for i in self.last_lvl]
+
+    def flat_list(self):
+        L = []
+        for x, y, z in self.last_lvl:
+            L.extend(x.dict_without_float()[1])
+        print(L[:2])
+        L.sort(key=lambda x: float(x['probability']), reverse=True)
+        return L
 
 
 if __name__ == '__main__':
@@ -176,14 +206,15 @@ if __name__ == '__main__':
     print(inp)
     m = main(inp, model)
     with open('./output/' + m.domain + '.json', 'w') as fp:
-        fp.write(str(m.get_result()))
-
+        json.dump(m.get_result(), fp)
+    # print(json.dumps(m.get_last_lvl(), indent=2))
+    print(json.dumps(m.flat_list(), indent=2))
     print(time.time() - t)
 
 """
 todo : 
     question avec deux reponses :
-        ex : what is the birthdate and the place of birth of joe biden ?
+        ex : what is the birthdate and the birthplace of joe biden ?
     question avec implication :
         ex : What is the birthday of the président of USA ?
     les deux :
