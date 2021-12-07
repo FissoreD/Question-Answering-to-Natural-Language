@@ -6,6 +6,7 @@ import functools
 from bs4 import BeautifulSoup
 import requests
 # dictionary = PyDictionary()
+THRESHOLD = 0.5
 
 
 def create_model():
@@ -41,7 +42,7 @@ def map_similarity_ordered(m):
 
 
 def map_similarity(model, wordA, word_list):
-    return map_similarity_ordered([i for i in map(lambda wordB: (wordB, similarity(model, wordA, wordB)), word_list) if i[1] > 0.1])
+    return map_similarity_ordered([i for i in map(lambda wordB: (wordB, similarity(model, wordA, wordB)), word_list) if i[1] > THRESHOLD])
 
 
 def most_similar(m):

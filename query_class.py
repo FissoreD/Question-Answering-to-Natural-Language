@@ -1,4 +1,5 @@
 import time
+from typing import List
 from SPARQLWrapper import SPARQLWrapper, JSON
 import json
 import read_input
@@ -23,7 +24,10 @@ black_list = [
     'prov #was derived from',
     'image',
     'wgs 8 4 _pos #geometry',
-    'point'
+    'point',
+    'direction',
+    'image coat',
+    'image flag'
 ]
 
 
@@ -116,7 +120,7 @@ class query:
 
     def __str__(self, precision=5) -> str:
         bm = self.best_match
-        return str([f"looking for {self.attribute} in {self.domain}", [{x: (bm[e][x] if x != 'probability' else str(round(bm[e][x], 2))) for x in bm[e]} for e in range(min(precision, len(bm)))]])
+        return json.dumps([f"looking for {self.attribute} in {self.domain}", [{x: (bm[e][x] if x != 'probability' else str(round(bm[e][x], 2))) for x in bm[e]} for e in range(min(precision, len(bm)))]])
 
     def __repr__(self) -> str:
         return self.__str__()
@@ -126,7 +130,8 @@ class main:
     def __init__(self, w1: list,
                  model=read_input.read_model()) -> None:
         self.model = model
-        self.res = [query(w1.pop().capitalize(), w1.pop(), model=model)]
+        self.domain = w1.pop().capitalize()
+        self.res = [query(self.domain, w1.pop(), model=model)]
         self.res[-1].initiate()
         # print(self.res[-1])
         current_lvl: list = []
@@ -153,12 +158,13 @@ class main:
                         o1 = query(current_domain.replace(' ', '_'),
                                    current_attribute, model=self.model)
                         o1.initiate()
-                        self.res.append(o1)
+                        if o1.best_match != []:
+                            self.res.append(o1)
                         next_lvl.append(o1)
             while next_lvl:
                 current_lvl.append(next_lvl.pop(0))
 
-    def get_result(self):
+    def get_result(self) -> List[query]:
         return self.res
 
 
@@ -169,7 +175,9 @@ if __name__ == '__main__':
     inp = read_input.parse_sentence(input('Enter your question : '))
     print(inp)
     m = main(inp, model)
-    print(m.get_result())
+    with open('./output/' + m.domain + '.json', 'w') as fp:
+        fp.write(str(m.get_result()))
+
     print(time.time() - t)
 
 """
@@ -186,4 +194,6 @@ todo :
 
 """
  What is the birthplace of the major of the capital of the country with Paris ?    
+
+ What is the name of the president of the country with Venice ?
 """
