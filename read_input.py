@@ -64,6 +64,9 @@ def clean_input(str):
     return
 
 
+accepted_classes = ["noun", "abbreviation"]
+
+
 def parse_sentence(str):
     res = []
     words = str.lower().strip().split()
@@ -77,8 +80,9 @@ def parse_sentence(str):
         word_class = cla.text.strip()
         if word_class[-1] == ',':
             word_class = word_class[:-1]
-        if word_class == 'noun' or word_class == 'abbreviation':
-            res.append(w)
+        print((w, word_class))
+        if word_class in accepted_classes:
+            res.append(w.replace('-', ''))
         # elif word_class == 'abbreviation':
         #     # defi = soup.find('div', attrs={"value": "1"}).get_text().replace(
         #     #     ':', '.').split('.')[0]
@@ -105,7 +109,7 @@ def parse_sentence(str):
 
 if __name__ == '__main__':
     print(parse_sentence(
-        "this is a sentence which only aims to confirm the ufo is a noun such as house or horse USA birth-date "))
+        "this is a sentence which only aims to confirm the ufo is a noun such as house or horse USA birthdate "))
     # create_model()
     # m = read_model()
     # print(similarity(m, 'world', 'world'))

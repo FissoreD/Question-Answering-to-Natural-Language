@@ -109,7 +109,7 @@ class query:
             #print(self.proba, i[1], self.proba * i[1])
             L.append(
                 {
-                    # "father": f"{self.father} (:={i[0]})",
+                    "father": f"{self.father} -> {i[0]} ({self.attribute})",
                     "probability": i[1] * self.proba,
                     "domain": removeHTTP(self.domain),
                     "value": i[0],
@@ -159,7 +159,7 @@ class main:
                     current_domain_list = i['res']
                     current_proba = i['probability']
                     # TODO
-                    current_father = f"{father} -> {current_object.attribute}"
+                    current_father = f"{father} -> {i['value']}"
                     # Si la liste liée au domain courant à plus
                     # de 5 élément alors on le considère pas
                     if len(current_domain_list) > 5:
@@ -173,12 +173,14 @@ class main:
                             pass
                         print(i['value'], current_domain, current_attribute)
                         o1 = query(current_domain.replace(' ', '_'),
-                                   current_attribute, father=current_father, model=self.model, proba=current_proba)
+                                   current_attribute, father=f"{current_father} ({first_attribute}) -> {removeHTTP(current_domain)}", model=self.model, proba=current_proba)
                         o1.initiate()
                         if o1.best_match != []:
                             self.res[removeHTTP(current_domain)] = o1
                         next_lvl.append(
-                            (o1, current_proba, f"{current_father} -> {removeHTTP(current_domain)}"))
+                            (o1, current_proba, f"{current_father} ({first_attribute}) -> {removeHTTP(current_domain)}"))
+            first_attribute = current_attribute
+
             while next_lvl:
                 current_lvl.append(next_lvl.pop(0))
         self.last_lvl = current_lvl
@@ -194,7 +196,7 @@ class main:
         for x, y, z in self.last_lvl:
             L.extend(x.dict_without_float()[1])
         print(L[:2])
-        L.sort(key=lambda x: float(x['probability']), reverse=True)
+        L.sort(key=lambda x: float(x['probability']))
         return L
 
 
@@ -202,7 +204,8 @@ if __name__ == '__main__':
     print('Charging')
     t = time.time()
     model = read_input.read_model()
-    inp = read_input.parse_sentence(input('Enter your question : '))
+    inp = read_input.parse_sentence(
+        "What is the president of upper-house of France")
     print(inp)
     m = main(inp, model)
     with open('./output/' + m.domain + '.json', 'w') as fp:
