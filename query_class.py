@@ -112,6 +112,7 @@ class query:
                     "probability": i[1] * self.proba,
                     "domain": removeHTTP(self.domain),
                     "value": i[0],
+                    "wanted": self.attribute,
                     "res": [j for j in set(self.page_dico[i[0]]) if j != ""]
                 })
         self.best_match = L

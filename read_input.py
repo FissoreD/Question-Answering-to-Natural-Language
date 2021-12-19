@@ -4,11 +4,19 @@ import os
 import functools
 from nltk.stem import PorterStemmer
 from nltk.stem import LancasterStemmer
-# from PyDictionary import PyDictionary
 from bs4 import BeautifulSoup
 import requests
-# dictionary = PyDictionary()
+from tkinter import INSERT
+import tkinter as tk
 THRESHOLD = 0.5
+
+
+def update_txt(txt, string):
+    if not isinstance(string, list):
+        string = [string]
+    for i in string:
+        txt.insert(INSERT, f"{i} \n")
+    txt.update()
 
 
 def create_model():
@@ -59,20 +67,12 @@ def read_input():
     return input().strip().split()
 
 
-def work_input():
-    return
-
-
-def clean_input(str):
-    return
-
-
 accepted_classes = ["noun", "abbreviation"]
 friendly_list = [chr(ord('a') + i) for i in range(26)] + \
     [chr(ord('A') + i) for i in range(26)] + list("_-'")
 
 
-def parse_sentence(question):
+def parse_sentence(question, txt):
     res = []
 
     words = question.lower().strip().split()
@@ -90,7 +90,7 @@ def parse_sentence(question):
         word_class = cla.text.strip()
         if word_class[-1] == ',':
             word_class = word_class[:-1]
-        print((w, word_class))
+        update_txt(txt, f"{(w, word_class)}")
         if word_class in accepted_classes:
             res.append(w)
         # elif word_class == 'abbreviation':
@@ -100,42 +100,23 @@ def parse_sentence(question):
     return res
 
 
-def parse_and(question):
+def parse_and(question, txt):
     temp = question.split(" and ")
     if len(temp) == 2:
-        first = parse_sentence(temp[0])
-        second = parse_sentence(temp[1])
+        first = parse_sentence(temp[0], txt)
+        second = parse_sentence(temp[1], txt)
         return [first + [second[0]],  *second[1:]]
-    res = parse_sentence(temp[0])
+    res = parse_sentence(temp[0], txt)
     return [[res[0]]] + res[1:]
 
 
-def main(question):
-    return parse_and(question)
+def main(question, txt):
+    return parse_and(question, txt)
 
-
-# def parse_sentence2():
-#     words = input().strip().split()
-
-#     res = []
-#     for w in words:
-#         print(w)
-#         try:
-#             d = dictionary.meaning(w, disable_errors=True)
-#             if d != None:
-#                 r = d.keys()
-#                 if 'Noun' in r:
-#                     res.append(w)
-#         except:
-#             pass
-
-#     return res
 
 if __name__ == '__main__':
-    print(parse_and("What is the birthplace and the birthdate of Emmanuel_Macron ?"))
-
-    # m = read_model()
-    # print(similarity(m, 'leader', 'president'))
+    print(parse_and(
+        "What is the birthplace and the birthdate of Emmanuel_Macron ?", tk.Entry()))
 
     lancaster = LancasterStemmer()
     print(lancaster.stem("founded"))
@@ -143,5 +124,7 @@ if __name__ == '__main__':
     print(lancaster.stem("troubling"))
     print(lancaster.stem("troubled"))
 
-    # print(map_similarity_ordered(map_similarity(m, 'president',
-    #       ['date', 'leader', 'year', 'apple'])))
+    m = read_model()
+    print(similarity(m, 'leader', 'president'))
+    print(map_similarity_ordered(map_similarity(m, 'president',
+          ['date', 'leader', 'year', 'apple'])))

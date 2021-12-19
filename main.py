@@ -1,7 +1,12 @@
+from os import unlink
+from tkinter.constants import BOTH, END, TOP
 import read_input
 from query_class import query, removeHTTP
 import time
 import json
+import tkinter as tk
+from tkinter.scrolledtext import ScrolledText
+from read_input import update_txt
 
 
 class main:
@@ -10,7 +15,7 @@ class main:
         self.model = model
         self.domain = w1.pop().capitalize()
         first_attribute = w1.pop()
-        self.make_query(self.domain, f"-> {first_attribute}",
+        self.make_query(self.domain, f"{self.domain} -> {first_attribute}",
                         first_attribute, 1, [], first_attribute)
         # current lvl = la pile à traiter au temps i
         current_lvl: list = []
@@ -44,8 +49,8 @@ class main:
                                 continue
                             except ValueError:
                                 pass
-                            print(i['value'], current_domain,
-                                  current_attribute)
+                            update_txt(txt,
+                                       f"{i['value']}, {current_domain}, {current_attribute}")
                             self.make_query(current_domain, current_father, first_attribute,
                                             current_proba, next_lvl, current_attribute)
 
@@ -85,14 +90,35 @@ class main:
         L = []
         for x, y, z in self.last_lvl:
             [L.extend(i) for i in [k.dict_without_float()[1] for k in x]]
-        print(L[:2])
         L.sort(key=lambda x: float(x['probability']))
         return L
 
     def pretty_print(self, verbose=False):
         L = self.flat_list()
-        [print("Probabilité : {} % - Résultat : {}".format(int(float(e["probability"]) * 100), [removeHTTP(i) for i in e["res"]]), "- Father : {}".format(e["father"]) if verbose else "")
-         for e in L[-10:]]
+        return ["Probabilité : {} % - Résultat : {} of {}{}".format(
+            int(float(e["probability"]) * 100),
+            [removeHTTP(i) for i in e["res"]],
+            [e['wanted']],
+            ", - Father : {}".format(e["father"]) if verbose else "")
+            for e in L[-10:]]
+
+
+def mm(query):
+    global txt
+    txt.delete('1.0', END)
+    t = time.time()
+    model = read_input.read_model()
+    inp = read_input.main(query, txt)
+    update_txt(txt, inp)
+    m = main(inp, model)
+    with open('./output/' + m.domain + '.json', 'w') as fp:
+        json.dump(m.get_result(), fp)
+    # print(json.dumps(m.get_last_lvl(), indent=2))
+    update_txt(txt, json.dumps(m.flat_list(), indent=2))
+
+    update_txt(m.pretty_print())
+    update_txt(txt, str(time.time() - t))
+    return m
 
 
 if __name__ == '__main__':
@@ -101,27 +127,60 @@ if __name__ == '__main__':
                  "What is the name of the president of the country with Venice ?",
                  "What is the date of Valentine's-Day",
                  "What is the birthplace and the birthdate of Emmanuel_Macron ?"]
+    root = tk.Tk()
+    mainPanel = tk.PanedWindow(root, bg='red')
 
-    print('Charging')
-    t = time.time()
-    model = read_input.read_model()
-    inp = read_input.main(questions[0])
-    print(inp)
-    m = main(inp, model)
-    with open('./output/' + m.domain + '.json', 'w') as fp:
-        json.dump(m.get_result(), fp)
-    # print(json.dumps(m.get_last_lvl(), indent=2))
-    print(json.dumps(m.flat_list(), indent=2))
-    m.pretty_print()
-    print(time.time() - t)
+    underPanel = tk.PanedWindow(mainPanel)
+    underPanel.pack(expand=1, fill=BOTH)
+
+    m = None
+
+    def calc_res():
+        global m
+        m = mm(entry.get())
+
+    entry = tk.Entry(underPanel)
+    sendButton = tk.Button(underPanel, text='Send',
+                           command=calc_res)
+    entry.pack(expand=1, fill='x')
+    sendButton.pack(expand=1, fill='x')
+    v = tk.StringVar(mainPanel, "1")
+
+    radiopanel = tk.PanedWindow(mainPanel)
+
+    values = {"Dicotionary": "1",
+              "Verbose List": "2",
+              "Simply List": "3"}
+
+    def swap_view(id):
+        if m == None:
+            return
+        txt.delete('1.0', END)
+        if id.get() == '1':
+            update_txt(txt, json.dumps(m.flat_list(), indent=2))
+        elif id.get() == '2':
+            update_txt(txt, m.pretty_print(verbose=True))
+        elif id.get() == '3':
+            update_txt(txt, m.pretty_print(verbose=False))
+
+    for (pos, (text, value)) in enumerate(values.items()):
+        tk.Radiobutton(radiopanel, text=text, variable=v,
+                       value=value, command=lambda: swap_view(v)).grid(column=pos, row=0, sticky='nsew')
+    radiopanel.pack(expand=1, fill=BOTH)
+
+    txt = ScrolledText(mainPanel)
+    txt.pack(expand=1, fill=BOTH)
+    mainPanel.pack(expand=1, fill=BOTH)
+    root.mainloop()
+
 
 """
-todo : 
-    question avec deux reponses :
-        ex : what is the birthdate and the birthplace of joe biden ?
-    question avec implication :
-        ex : What is the birthday of the président of USA ?
-    les deux :
-        ex : what is the birthdate and the birthplace of the president of USA ?
+todo:
+    question avec deux reponses:
+        ex: what is the birthdate and the birthplace of joe biden ?
+    question avec implication:
+        ex: What is the birthday of the président of USA ?
+    les deux:
+        ex: what is the birthdate and the birthplace of the president of USA ?
 
 """
