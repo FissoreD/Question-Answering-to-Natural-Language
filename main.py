@@ -1,5 +1,6 @@
 from os import unlink
 from tkinter.constants import BOTH, END, TOP
+from typing import List
 import read_input
 from query_class import query, removeHTTP
 import time
@@ -10,9 +11,10 @@ from read_input import update_txt
 
 
 class main:
-    def __init__(self, w1: list,
-                 model=read_input.read_model()) -> None:
+    def __init__(self,  model=read_input.read_model()) -> None:
         self.model = model
+
+    def launch_query(self, w1: List[str]):
         self.domain = w1.pop().capitalize()
         first_attribute = w1.pop()
         self.make_query(self.domain, f"{self.domain} -> {first_attribute}",
@@ -49,7 +51,7 @@ class main:
                                 continue
                             except ValueError:
                                 pass
-                            update_txt(txt,
+                            update_txt(txt_panel,
                                        f"{i['value']}, {current_domain}, {current_attribute}")
                             self.make_query(current_domain, current_father, first_attribute,
                                             current_proba, next_lvl, current_attribute)
@@ -103,27 +105,9 @@ class main:
             for e in L[-10:]]
 
 
-def mm(query):
-    global txt
-    txt.delete('1.0', END)
-    t = time.time()
-    model = read_input.read_model()
-    inp = read_input.main(query, txt)
-    update_txt(txt, inp)
-    m = main(inp, model)
-    with open('./output/' + m.domain + '.json', 'w') as fp:
-        json.dump(m.get_result(), fp)
-    # print(json.dumps(m.get_last_lvl(), indent=2))
-    update_txt(txt, json.dumps(m.flat_list(), indent=2))
-
-    update_txt(m.pretty_print())
-    update_txt(txt, str(time.time() - t))
-    return m
-
-
 if __name__ == '__main__':
     questions = ["What is the children, birthdate and birthplace of the major of the capital of France ?",
-                 "What is the birthdate and birthplace of foundator of Microsoft ?",
+                 "What is the birthdate and birthplace of founder of Microsoft ?",
                  "What is the name of the president of the country with Venice ?",
                  "What is the date of Valentine's-Day",
                  "What is the birthplace and the birthdate of Emmanuel_Macron ?"]
@@ -133,13 +117,22 @@ if __name__ == '__main__':
     underPanel = tk.PanedWindow(mainPanel)
     underPanel.pack(expand=1, fill=BOTH)
 
-    m = None
-
-    def calc_res():
-        global m
-        m = mm(entry.get())
+    m = main()
 
     entry = tk.Entry(underPanel)
+
+    def calc_res():
+        txt_panel.delete('1.0', END)
+        t = time.time()
+        inp = read_input.main(entry.get(), txt_panel)
+        update_txt(txt_panel, inp)
+        m.launch_query(inp)
+        with open('./output/' + m.domain + '.json', 'w') as fp:
+            json.dump(m.get_result(), fp)
+        update_txt(txt_panel, json.dumps(m.flat_list(), indent=2))
+        update_txt(txt_panel, m.pretty_print())
+        update_txt(txt_panel, str(time.time() - t))
+
     sendButton = tk.Button(underPanel, text='Send',
                            command=calc_res)
     entry.pack(expand=1, fill='x')
@@ -148,28 +141,28 @@ if __name__ == '__main__':
 
     radiopanel = tk.PanedWindow(mainPanel)
 
-    values = {"Dicotionary": "1",
+    values = {"Dictionary": "1",
               "Verbose List": "2",
               "Simply List": "3"}
 
     def swap_view(id):
         if m == None:
             return
-        txt.delete('1.0', END)
+        txt_panel.delete('1.0', END)
         if id.get() == '1':
-            update_txt(txt, json.dumps(m.flat_list(), indent=2))
+            update_txt(txt_panel, json.dumps(m.flat_list(), indent=2))
         elif id.get() == '2':
-            update_txt(txt, m.pretty_print(verbose=True))
+            update_txt(txt_panel, m.pretty_print(verbose=True))
         elif id.get() == '3':
-            update_txt(txt, m.pretty_print(verbose=False))
+            update_txt(txt_panel, m.pretty_print(verbose=False))
 
     for (pos, (text, value)) in enumerate(values.items()):
         tk.Radiobutton(radiopanel, text=text, variable=v,
                        value=value, command=lambda: swap_view(v)).grid(column=pos, row=0, sticky='nsew')
     radiopanel.pack(expand=1, fill=BOTH)
 
-    txt = ScrolledText(mainPanel)
-    txt.pack(expand=1, fill=BOTH)
+    txt_panel = ScrolledText(mainPanel)
+    txt_panel.pack(expand=1, fill=BOTH)
     mainPanel.pack(expand=1, fill=BOTH)
     root.mainloop()
 

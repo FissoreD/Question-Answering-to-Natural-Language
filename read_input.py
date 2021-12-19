@@ -11,12 +11,12 @@ import tkinter as tk
 THRESHOLD = 0.5
 
 
-def update_txt(txt, string):
+def update_txt(txt_panel, string):
     if not isinstance(string, list):
         string = [string]
     for i in string:
-        txt.insert(INSERT, f"{i} \n")
-    txt.update()
+        txt_panel.insert(INSERT, f"{i} \n")
+    txt_panel.update()
 
 
 def create_model():
