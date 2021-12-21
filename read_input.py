@@ -81,7 +81,7 @@ def parse_sentence(question, txt):
         if w == "":
             continue
         r = requests.get("https://www.dictionary.com/browse/" +
-                         w.replace("'", "-") + "#", allow_redirects=True)
+                         w.replace("'", "-") + "#", allow_redirects=False)
         soup = BeautifulSoup(r.text, 'html.parser')
         cla = soup.find('span', {'class': 'luna-pos'})
         if cla == None:

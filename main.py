@@ -1,3 +1,4 @@
+import tkinter.ttk as ttk
 from os import unlink
 from tkinter.constants import BOTH, END, TOP
 from typing import List
@@ -109,7 +110,7 @@ if __name__ == '__main__':
     questions = ["What is the children, birthdate and birthplace of the major of the capital of France ?",
                  "What is the birthdate and birthplace of founder of Microsoft ?",
                  "What is the name of the president of the country with Venice ?",
-                 "What is the date of Valentine's-Day",
+                 "What is the date of Valentine's-Day ?",
                  "What is the birthplace and the birthdate of Emmanuel_Macron ?"]
     root = tk.Tk()
     mainPanel = tk.PanedWindow(root, bg='red')
@@ -119,9 +120,35 @@ if __name__ == '__main__':
 
     m = main()
 
-    entry = tk.Entry(underPanel)
+    entry = ttk.Combobox(underPanel, values=questions)
+
+    default_font = tk.font.nametofont("TkDefaultFont")
+    import tkinter.font as tkf
+
+    entry.bind("<FocusIn>", lambda e: setDefault(False))
+    entry.bind("<FocusOut>", lambda e: setDefault(True))
+    entry.set("Enter your question")
+    entry.configure(font=(default_font.cget('family'),
+                    default_font.cget('size'), 'italic'))
+
+    def get_current_font():
+        return tkf.Font(font=entry['font'])
+
+    def setDefault(b):
+        if b:
+            if entry.get() == '':
+                entry.set("Enter your question")
+                entry.configure(font=(default_font.cget('family'),
+                                      default_font.cget('size'), 'italic'))
+        else:
+            if entry.get() == 'Enter your question' and get_current_font().cget('slant') == 'italic':
+                entry.set("")
+
+            entry.configure(font=default_font)
 
     def calc_res():
+        if get_current_font().cget('slant') == 'italic':
+            return
         txt_panel.delete('1.0', END)
         t = time.time()
         inp = read_input.main(entry.get(), txt_panel)
@@ -133,10 +160,15 @@ if __name__ == '__main__':
         update_txt(txt_panel, m.pretty_print())
         update_txt(txt_panel, str(time.time() - t))
 
+    entry.bind('<Return>', lambda e: calc_res())
+
     sendButton = tk.Button(underPanel, text='Send',
                            command=calc_res)
-    entry.pack(expand=1, fill='x')
-    sendButton.pack(expand=1, fill='x')
+
+    entry.grid(row=0, column=0, sticky="nsew")
+    sendButton.grid(row=0, column=1)
+    underPanel.columnconfigure(0, weight=1)
+
     v = tk.StringVar(mainPanel, "1")
 
     radiopanel = tk.PanedWindow(mainPanel)
