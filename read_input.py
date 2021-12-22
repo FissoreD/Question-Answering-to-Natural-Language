@@ -1,22 +1,26 @@
+from tkinter.constants import END
 from nltk.corpus import brown
 import gensim
 import os
 import functools
 from nltk.stem import PorterStemmer
-from nltk.stem import LancasterStemmer
+from tkinter.scrolledtext import ScrolledText
 from bs4 import BeautifulSoup
 import requests
 from tkinter import INSERT
-import tkinter as tk
 THRESHOLD = 0.5
 
 
-def update_txt(txt_panel, string):
+def update_txt(txt_panel: ScrolledText, string, tag='', end='\n'):
+    if txt_panel is None:
+        print(string, end=end)
+        return
     if not isinstance(string, list):
         string = [string]
     for i in string:
-        txt_panel.insert(INSERT, f"{i} \n")
+        txt_panel.insert(INSERT, f"{i} {end}", tag)
     txt_panel.update()
+    txt_panel.see(END)
 
 
 def create_model():
@@ -37,15 +41,15 @@ def read_model():
 def similarity(model, wordA, wordB):
     wordBs = wordB.split()
     if len(wordBs) == 1:
-        lancaster = LancasterStemmer()
-        if wordA == wordB or lancaster.stem(wordA) == lancaster.stem(wordB):
+        stemmer = PorterStemmer()
+        if wordA == wordB or (True and stemmer.stem(wordA) == stemmer.stem(wordB)):
             return 1
         try:
             return model.wv.similarity(wordA, wordBs[0])
         except KeyError:
             return float(0)
     x = [similarity(model, wordA, i) for i in wordBs]
-    return 1 if max(x) > 0.999 or wordB.replace(' ', '') == wordA else sum(x)/len(x)
+    return 1 if wordB.replace(' ', '') == wordA else sum(x)/len(x)
 
 
 def map_similarity_ordered(m):
@@ -58,9 +62,6 @@ def map_similarity(model, wordA, word_list):
 
 def most_similar(m):
     return functools.reduce(lambda a, b: a if a[1] > b[1] else b, m)
-
-
-wh_question = 'where,when,what,how,which'.split(',')
 
 
 def read_input():
@@ -80,8 +81,13 @@ def parse_sentence(question, txt):
         [w := w.replace(i, "") for i in list(w) if i not in friendly_list]
         if w == "":
             continue
-        r = requests.get("https://www.dictionary.com/browse/" +
-                         w.replace("'", "-") + "#", allow_redirects=False)
+        url = "https://www.dictionary.com/browse/" + w.replace("'", "-") + "#"
+        try:
+            r = requests.get(url)
+        except Exception as e:
+            if txt != None:
+                update_txt(txt, f"There is a network error to open {url} page")
+            raise e
         soup = BeautifulSoup(r.text, 'html.parser')
         cla = soup.find('span', {'class': 'luna-pos'})
         if cla == None:
@@ -115,16 +121,19 @@ def main(question, txt):
 
 
 if __name__ == '__main__':
-    print(parse_and(
-        "What is the birthplace and the birthdate of Emmanuel_Macron ?", tk.Entry()))
+    # print(parse_and(
+    #     "What is the birthplace and the birthdate of Emmanuel_Macron ?", tk.Entry()))
 
-    lancaster = LancasterStemmer()
-    print(lancaster.stem("founded"))
-    print(lancaster.stem("foundator"))
-    print(lancaster.stem("troubling"))
-    print(lancaster.stem("troubled"))
+    stemmer = PorterStemmer()
+    print(stemmer.stem("founded"))
+    print(stemmer.stem("foundator"))
+    print(stemmer.stem("troubling"))
+    print(stemmer.stem("troubled"))
 
     m = read_model()
+    print(similarity(m, 'predecessor', 'birthplace'))
     print(similarity(m, 'leader', 'president'))
+    print(similarity(m, 'founder', 'founded'))
+    print(similarity(m, 'founder', 'founders'))
     print(map_similarity_ordered(map_similarity(m, 'president',
           ['date', 'leader', 'year', 'apple'])))

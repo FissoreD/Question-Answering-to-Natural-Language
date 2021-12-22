@@ -2,7 +2,7 @@ from typing import Dict, List
 from SPARQLWrapper import SPARQLWrapper, JSON
 import json
 import read_input
-# %%
+
 output_folder = './output/'
 keyCol = 'keyCol'
 keyVal = 'value'
@@ -45,20 +45,20 @@ class query:
         the class
     """
 
-    def __init__(self, domain: str, attribute, father="", proba=1,
+    def __init__(self, domain: str, father="", proba=1,
                  model=read_input.read_model()) -> None:
         self.domain = domain.replace('"', "").replace("-", "_")
         self.father = father
         self.proba = proba
-        self.attribute = attribute.lower().replace("-", "")
         self.model = model
         self.sparql = self.create_sparql()
         self.link = self.create_link()
         self.query = self.create_query()
-
-    def initiate(self):
         self.send_query()
         self.create_page_dico()
+
+    def initiate(self, attribute):
+        self.attribute = attribute.lower().replace("-", "")
         self.find_association()
         self.calc_best_match()
 
@@ -78,7 +78,9 @@ class query:
     def send_query(self):
         self.sparql.setQuery(self.query)
         self.sparql.setReturnFormat(JSON)
-        self.page_json = self.sparql.query().convert()
+        print(self.query)
+        self.page_json = self.sparql.query()
+        self.page_json = self.page_json.convert()
 
     def create_page_dico(self):
         list_of_content = self.page_json['results']['bindings']
@@ -105,10 +107,10 @@ class query:
     def calc_best_match(self):
         L = []
         for i in self.similarity:
-            #print(self.proba, i[1], self.proba * i[1])
+            # print(self.proba, i[1], self.proba * i[1])
             L.append(
                 {
-                    "father": f"{self.father} -> {i[0]} ({self.attribute})",
+                    "father": f"{self.father} -> {removeHTTP(self.domain)} -> {i[0]} ({self.attribute})",
                     "probability": i[1] * self.proba,
                     "domain": removeHTTP(self.domain),
                     "value": i[0],
@@ -136,3 +138,9 @@ class query:
 
     def __repr__(self) -> str:
         return self.__str__()
+
+
+if __name__ == '__main__':
+    Q = query('France')
+    Q.initiate('capital')
+    print(Q.best_match)

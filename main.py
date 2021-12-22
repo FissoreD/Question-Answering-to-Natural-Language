@@ -1,5 +1,5 @@
 import tkinter.ttk as ttk
-from os import unlink
+from os import terminal_size, unlink
 from tkinter.constants import BOTH, END, TOP
 from typing import List
 import read_input
@@ -9,65 +9,56 @@ import json
 import tkinter as tk
 from tkinter.scrolledtext import ScrolledText
 from read_input import update_txt
+from sys import argv
 
 
 class main:
-    def __init__(self,  model=read_input.read_model()) -> None:
+    def __init__(self, txt_panel,  model=read_input.read_model()) -> None:
         self.model = model
+        self.txt_panel = txt_panel
 
     def launch_query(self, w1: List[str]):
         self.domain = w1.pop().capitalize()
-        first_attribute = w1.pop()
-        self.make_query(self.domain, f"{self.domain} -> {first_attribute}",
-                        first_attribute, 1, [], first_attribute)
-        # current lvl = la pile à traiter au temps i
         current_lvl: list = []
-        # next lvl = la pile à traiter au temps i + 1
         next_lvl: list = []
-        # le nivau courant contient la liste des queries associées
-        # au père, la proba du père et le domain du père
-        current_lvl.append((self.res[self.domain], 1, self.domain))
-        # tant que la file des sujets de la requête n'est pas vide
+        self.last_lvl: dict = {}
+        self.make_query(self.domain, "", 1, current_lvl, w1.pop())
         while w1:
             current_attribute = w1.pop()
             # tant que l'étage courant n'est pas vide
             while current_lvl:
-                current_object, _, father = current_lvl.pop(0)
-                # pour tous les éléments de la liste de ???
-                for k in current_object:
-                    # pour tous les meilleurs resultats de la requête précédente
-                    for i in k.best_match[:5]:
-                        current_domain_list = i['res']
-                        current_proba = i['probability']
-                        current_father = f"{father} -> {i['value']}"
-                        # Si la liste liée au domain courant à plus
-                        # de 5 élément alors on la considère pas
-                        if len(current_domain_list) > 5:
+                current_object = current_lvl.pop(0)
+                # pour tous les meilleurs resultats de la requête précédente
+                for i in current_object:
+                    current_domain_list = i['res']
+                    current_proba = i['probability']
+                    current_father = i['father']
+                    # Si la liste liée au domain courant à plus
+                    # de 5 élément alors on ne la considère pas
+                    if len(current_domain_list) > 5:
+                        continue
+                    # pour tous les éléments associés à la categorie courante
+                    for current_domain in current_domain_list:
+                        try:
+                            # si le current_domain est un float alors on ne le considère pas
+                            float(current_domain)
                             continue
-                        # pour tous les éléments associés à la categorie courante
-                        for current_domain in current_domain_list:
-                            # si le domain courant est un nombre on skip
-                            try:
-                                float(current_domain)
-                                continue
-                            except ValueError:
-                                pass
-                            update_txt(txt_panel,
-                                       f"{i['value']}, {current_domain}, {current_attribute}")
-                            self.make_query(current_domain, current_father, first_attribute,
-                                            current_proba, next_lvl, current_attribute)
-
-            first_attribute = current_attribute
+                        except:
+                            pass
+                        self.make_query(current_domain, current_father,
+                                        current_proba, next_lvl, current_attribute)
             # on bascule le next lvl dans current lvl
             while next_lvl:
                 current_lvl.append(next_lvl.pop(0))
-        self.last_lvl = current_lvl
 
-    def make_query(self, current_domain, current_father, first_attribute, current_proba, next_lvl, current_attribute):
-        def send_query(s):
-            o1 = query(current_domain.replace(' ', '_'),
-                       s, father=f"{current_father} ({first_attribute}) -> {removeHTTP(current_domain)}", model=self.model, proba=current_proba)
-            o1.initiate()
+    def make_query(self, current_domain, current_father, current_proba, next_lvl, current_attribute):
+        def send_query(attribute, o1, is_last_lvl=False):
+            update_txt(self.txt_panel,
+                       f"Looking for {attribute} in {removeHTTP(current_domain)}", 'green')
+            o1.initiate(attribute)
+            next_lvl.append(o1.best_match[:5])
+            if is_last_lvl:
+                self.last_lvl[attribute].extend(o1.best_match[:5])
             if o1.best_match != []:
                 try:
                     self.res[current_domain].append(o1)
@@ -75,35 +66,46 @@ class main:
                     self.res[current_domain] = [o1]
                 except AttributeError:
                     self.res = {self.domain: [o1]}
-                next_lvl.append(
-                    ([o1], current_proba, f"{current_father} ({first_attribute}) -> {removeHTTP(current_domain)}"))
+        o1 = query(current_domain.replace(' ', '_'),
+                   father=current_father, model=self.model, proba=current_proba)
         if type(current_attribute) == list:
+            if len(self.last_lvl) == 0:
+                for elt in current_attribute:
+                    self.last_lvl[elt] = []
             for s in current_attribute:
-                send_query(s)
+                send_query(s, o1, True)
         else:
-            send_query(current_attribute)
+            send_query(current_attribute, o1)
 
     def get_result(self):
         return {i: [k.dict_without_float() for k in self.res[i]] for i in self.res}
 
-    def get_last_lvl(self):
-        return [i[0].dict_without_float() for i in self.last_lvl]
-
     def flat_list(self):
-        L = []
-        for x, y, z in self.last_lvl:
-            [L.extend(i) for i in [k.dict_without_float()[1] for k in x]]
-        L.sort(key=lambda x: float(x['probability']))
-        return L
+        for key, value in self.last_lvl.items():
+            self.last_lvl[key] = []
+            for elt in value:
+                elt['probability'] = str(elt['probability'])
+                self.last_lvl[key].append(elt)
+            self.last_lvl[key].sort(key=lambda x: float(x['probability']))
+        return self.last_lvl
 
     def pretty_print(self, verbose=False):
-        L = self.flat_list()
-        return ["Probabilité : {} % - Résultat : {} of {}{}".format(
-            int(float(e["probability"]) * 100),
-            [removeHTTP(i) for i in e["res"]],
-            [e['wanted']],
-            ", - Father : {}".format(e["father"]) if verbose else "")
-            for e in L[-10:]]
+        def white_line(): update_txt(self.txt_panel, "")
+        def dotted_line(): update_txt(self.txt_panel, "  " + "~"*35)
+        for key, value in self.flat_list().items():
+            update_txt(self.txt_panel, f"Looking for: {key}")
+            for x in reversed(value[-10:]):
+                update_txt(self.txt_panel, "  Probability : {} %".format(
+                    int(float(x["probability"]) * 100)), end='', tag='red'),
+                if verbose:
+                    update_txt(txt_panel, "\n  Path : {}\n ".format(
+                        x["father"]), end='', tag='magenta')
+                update_txt(self.txt_panel, "Results : ", tag='green')
+                for elt in x['res']:
+                    update_txt(self.txt_panel,
+                               f"    {removeHTTP(elt)}", tag='blue')
+                dotted_line()
+            white_line()
 
 
 if __name__ == '__main__':
@@ -112,100 +114,98 @@ if __name__ == '__main__':
                  "What is the name of the president of the country with Venice ?",
                  "What is the date of Valentine's-Day ?",
                  "What is the birthplace and the birthdate of Emmanuel_Macron ?"]
-    root = tk.Tk()
-    mainPanel = tk.PanedWindow(root, bg='red')
+    if not '-shell' in argv:
 
-    underPanel = tk.PanedWindow(mainPanel)
-    underPanel.pack(expand=1, fill=BOTH)
+        root = tk.Tk()
+        mainPanel = tk.PanedWindow(root)
 
-    m = main()
+        underPanel = tk.PanedWindow(mainPanel)
+        underPanel.pack(expand=1, fill=BOTH)
 
-    entry = ttk.Combobox(underPanel, values=questions)
+        entry = ttk.Combobox(underPanel, values=questions)
 
-    default_font = tk.font.nametofont("TkDefaultFont")
-    import tkinter.font as tkf
+        default_font = tk.font.nametofont("TkDefaultFont")
+        import tkinter.font as tkf
 
-    entry.bind("<FocusIn>", lambda e: setDefault(False))
-    entry.bind("<FocusOut>", lambda e: setDefault(True))
-    entry.set("Enter your question")
-    entry.configure(font=(default_font.cget('family'),
-                    default_font.cget('size'), 'italic'))
+        entry.bind("<FocusIn>", lambda e: setDefault(False))
+        entry.bind("<FocusOut>", lambda e: setDefault(True))
+        entry.set("Enter your question")
+        entry.configure(font=(default_font.cget('family'),
+                        default_font.cget('size'), 'italic'))
 
-    def get_current_font():
-        return tkf.Font(font=entry['font'])
+        def get_current_font():
+            return tkf.Font(font=entry['font'])
 
-    def setDefault(b):
-        if b:
-            if entry.get() == '':
-                entry.set("Enter your question")
-                entry.configure(font=(default_font.cget('family'),
-                                      default_font.cget('size'), 'italic'))
-        else:
-            if entry.get() == 'Enter your question' and get_current_font().cget('slant') == 'italic':
-                entry.set("")
+        def setDefault(b):
+            if b:
+                if entry.get() == '':
+                    entry.set("Enter your question")
+                    entry.configure(font=(default_font.cget('family'),
+                                          default_font.cget('size'), 'italic'))
+            else:
+                if entry.get() == 'Enter your question' and get_current_font().cget('slant') == 'italic':
+                    entry.set("")
 
-            entry.configure(font=default_font)
+                entry.configure(font=default_font)
 
-    def calc_res():
-        if get_current_font().cget('slant') == 'italic':
-            return
-        txt_panel.delete('1.0', END)
-        t = time.time()
-        inp = read_input.main(entry.get(), txt_panel)
-        update_txt(txt_panel, inp)
-        m.launch_query(inp)
-        with open('./output/' + m.domain + '.json', 'w') as fp:
-            json.dump(m.get_result(), fp)
-        update_txt(txt_panel, json.dumps(m.flat_list(), indent=2))
-        update_txt(txt_panel, m.pretty_print())
-        update_txt(txt_panel, str(time.time() - t))
-
-    entry.bind('<Return>', lambda e: calc_res())
-
-    sendButton = tk.Button(underPanel, text='Send',
-                           command=calc_res)
-
-    entry.grid(row=0, column=0, sticky="nsew")
-    sendButton.grid(row=0, column=1)
-    underPanel.columnconfigure(0, weight=1)
-
-    v = tk.StringVar(mainPanel, "1")
-
-    radiopanel = tk.PanedWindow(mainPanel)
-
-    values = {"Dictionary": "1",
-              "Verbose List": "2",
-              "Simply List": "3"}
-
-    def swap_view(id):
-        if m == None:
-            return
-        txt_panel.delete('1.0', END)
-        if id.get() == '1':
+        def calc_res():
+            if get_current_font().cget('slant') == 'italic':
+                return
+            txt_panel.delete('1.0', END)
+            t = time.time()
+            inp = read_input.main(entry.get(), txt_panel)
+            update_txt(txt_panel, inp)
+            m.launch_query(inp)
             update_txt(txt_panel, json.dumps(m.flat_list(), indent=2))
-        elif id.get() == '2':
-            update_txt(txt_panel, m.pretty_print(verbose=True))
-        elif id.get() == '3':
-            update_txt(txt_panel, m.pretty_print(verbose=False))
+            update_txt(txt_panel, m.pretty_print())
+            update_txt(txt_panel, str(time.time() - t))
 
-    for (pos, (text, value)) in enumerate(values.items()):
-        tk.Radiobutton(radiopanel, text=text, variable=v,
-                       value=value, command=lambda: swap_view(v)).grid(column=pos, row=0, sticky='nsew')
-    radiopanel.pack(expand=1, fill=BOTH)
+        entry.bind('<Return>', lambda e: calc_res())
 
-    txt_panel = ScrolledText(mainPanel)
-    txt_panel.pack(expand=1, fill=BOTH)
-    mainPanel.pack(expand=1, fill=BOTH)
-    root.mainloop()
+        sendButton = tk.Button(underPanel, text='Send',
+                               command=calc_res)
 
+        entry.grid(row=0, column=0, sticky="nsew")
+        sendButton.grid(row=0, column=1)
+        underPanel.columnconfigure(0, weight=1)
 
-"""
-todo:
-    question avec deux reponses:
-        ex: what is the birthdate and the birthplace of joe biden ?
-    question avec implication:
-        ex: What is the birthday of the président of USA ?
-    les deux:
-        ex: what is the birthdate and the birthplace of the president of USA ?
+        v = tk.StringVar(mainPanel, "1")
 
-"""
+        radiopanel = tk.PanedWindow(mainPanel)
+
+        values = {"Dictionary": "1",
+                  "Verbose List": "2",
+                  "Simply List": "3"}
+
+        def swap_view(id):
+            if m == None:
+                return
+            txt_panel.delete('1.0', END)
+            if id.get() == '1':
+                update_txt(txt_panel, json.dumps(m.flat_list(), indent=2))
+            elif id.get() == '2':
+                m.pretty_print(verbose=True)
+            elif id.get() == '3':
+                m.pretty_print(verbose=False)
+
+        for (pos, (text, value)) in enumerate(values.items()):
+            tk.Radiobutton(radiopanel, text=text, variable=v,
+                           value=value, command=lambda: swap_view(v)).grid(column=pos, row=0, sticky='nsew')
+        radiopanel.pack(expand=1, fill=BOTH)
+
+        txt_panel = ScrolledText(mainPanel)
+        color_list = ['red', 'green', 'blue', 'magenta']
+        for i in color_list:
+            txt_panel.tag_config(i, foreground=i)
+        txt_panel.pack(expand=1, fill=BOTH)
+        mainPanel.pack(expand=1, fill=BOTH)
+        m = main(txt_panel)
+        root.mainloop()
+
+    else:
+        t = time.time()
+        m = main(None)
+        i = read_input.main(input('Enter you question : '), None)
+        m.launch_query(i)
+        update_txt(None, m.pretty_print())
+        update_txt(None, str(time.time() - t))
