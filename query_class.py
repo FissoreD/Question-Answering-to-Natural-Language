@@ -1,6 +1,6 @@
-from typing import Dict, List
 from SPARQLWrapper import SPARQLWrapper, JSON
 import json
+from read_input import update_txt
 import read_input
 
 output_folder = './output/'
@@ -46,11 +46,12 @@ class query:
     """
 
     def __init__(self, domain: str, father="", proba=1,
-                 model=read_input.read_model()) -> None:
+                 model=read_input.read_model(), txt_panel=None) -> None:
         self.domain = domain.replace('"', "").replace("-", "_")
         self.father = father
         self.proba = proba
         self.model = model
+        self.txt_panel = txt_panel
         self.sparql = self.create_sparql()
         self.link = self.create_link()
         self.query = self.create_query()
@@ -78,9 +79,14 @@ class query:
     def send_query(self):
         self.sparql.setQuery(self.query)
         self.sparql.setReturnFormat(JSON)
-        print(self.query)
-        self.page_json = self.sparql.query()
-        self.page_json = self.page_json.convert()
+        try:
+            self.page_json = self.sparql.query().convert()
+        except Exception as e:
+            update_txt(self.txt_panel,
+                       'Error in send following query', tag='blue')
+            update_txt(self.txt_panel, self.query, tag='blue')
+            update_txt(self.txt_panel, e, tag='red')
+            raise e
 
     def create_page_dico(self):
         list_of_content = self.page_json['results']['bindings']

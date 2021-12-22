@@ -120,7 +120,7 @@ if __name__ == '__main__':
         mainPanel = tk.PanedWindow(root)
 
         underPanel = tk.PanedWindow(mainPanel)
-        underPanel.pack(expand=1, fill=BOTH)
+        underPanel.pack(fill=BOTH)
 
         entry = ttk.Combobox(underPanel, values=questions)
 
@@ -191,7 +191,7 @@ if __name__ == '__main__':
         for (pos, (text, value)) in enumerate(values.items()):
             tk.Radiobutton(radiopanel, text=text, variable=v,
                            value=value, command=lambda: swap_view(v)).grid(column=pos, row=0, sticky='nsew')
-        radiopanel.pack(expand=1, fill=BOTH)
+        radiopanel.pack()
 
         txt_panel = ScrolledText(mainPanel)
         color_list = ['red', 'green', 'blue', 'magenta']

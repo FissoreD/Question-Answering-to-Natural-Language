@@ -86,7 +86,8 @@ def parse_sentence(question, txt):
             r = requests.get(url)
         except Exception as e:
             if txt != None:
-                update_txt(txt, f"There is a network error to open {url} page")
+                update_txt(txt, f"Error in loading {url} page", tag='blue')
+                update_txt(txt, e, tag='red')
             raise e
         soup = BeautifulSoup(r.text, 'html.parser')
         cla = soup.find('span', {'class': 'luna-pos'})
