@@ -92,7 +92,7 @@ def parse_sentence(question, txt):
             continue
         url = "https://www.dictionary.com/browse/" + w.replace("'", "-") + "#"
         try:
-            r = requests.get(url)
+            r = requests.get(url, allow_redirects=True)
         except Exception as e:
             if txt != None:
                 update_txt(txt, f"Error in loading {url} page", tag='blue')
