@@ -39,6 +39,7 @@ def read_model():
 
 
 def similarity(model, wordA, wordB):
+    """ Return a value betwwenn O and 1 which corresponds to the rate of similarity between the 2 words A and B """
     wordBs = wordB.split()
     if len(wordBs) == 1:
         stemmer = PorterStemmer()
@@ -68,12 +69,20 @@ def read_input():
     return input().strip().split()
 
 
+""" The accepted classes it's the set of word's classes that we will keep on the parsing sentence phase """
 accepted_classes = ["noun", "abbreviation"]
+
+""" The set of accepted characters is : [a-zA-Z_-] """
 friendly_list = [chr(ord('a') + i) for i in range(26)] + \
     [chr(ord('A') + i) for i in range(26)] + list("_-'")
 
 
 def parse_sentence(question, txt):
+    """
+    It is this method which analyzes the question. First of all we split it into a list of words.
+    Then, for all of them, we check if all the char wich composes the word are accepted. Is isn't, we just delete it.
+    Next, we make the request and we keep only the words whose classes are accepted.
+    """
     res = []
 
     words = question.lower().strip().split()
@@ -108,6 +117,7 @@ def parse_sentence(question, txt):
 
 
 def parse_and(question, txt):
+    """ If the question includes 'and', it means that we have to consider the word just after it into the multi-answer property list """
     temp = question.split(" and ")
     if len(temp) == 2:
         first = parse_sentence(temp[0], txt)

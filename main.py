@@ -115,6 +115,7 @@ if __name__ == '__main__':
                  "What is the date of Valentine's-Day ?",
                  "What is the birthplace and the birthdate of Emmanuel_Macron ?"]
     if not '-shell' in argv:
+        """ On crée pas défault l'interface graphique si l'utilisateur n'a pas spécifié la sortie sur le terminal """
 
         root = tk.Tk()
         mainPanel = tk.PanedWindow(root)
@@ -137,6 +138,7 @@ if __name__ == '__main__':
             return tkf.Font(font=entry['font'])
 
         def setDefault(b):
+            """ Pour faire apparaître le hint text en italique 'Enter your question' si le champ de saisie est vide et n'est pas sélectionné """
             if b:
                 if entry.get() == '':
                     entry.set("Enter your question")
@@ -149,6 +151,7 @@ if __name__ == '__main__':
                 entry.configure(font=default_font)
 
         def calc_res():
+            """ Méthode qui sera appelée après avoir envoyer la question """
             if get_current_font().cget('slant') == 'italic':
                 return
             txt_panel.delete('1.0', END)
@@ -178,6 +181,10 @@ if __name__ == '__main__':
                   "Simply List": "3"}
 
         def swap_view(id):
+            """
+            Radio button pour passer d'une réponse détaillée à une réponse ne contenant que l'essentiel ou a une réponse présentant
+            l'arbre de recherche de chacun des résultats.
+            """
             if m == None:
                 return
             txt_panel.delete('1.0', END)
@@ -203,6 +210,7 @@ if __name__ == '__main__':
         root.mainloop()
 
     else:
+        """ Sinon on affiche le résultat sur le terminal """
         t = time.time()
         m = main(None)
         i = read_input.main(input('Enter you question : '), None)
