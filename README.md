@@ -30,7 +30,7 @@ Langage utilisé **Python** version 3.9.7 avec les librairies suivantes :
 
 ## Lancement du Projet
 
-Pour exécuter le projet, il faut se placer dans la racine du projet depuis le terminal et lancer le fichier *main.py*. La fenêtre graphique s’ouvrira après quelques instants pour que les bibliothèques importées se chargent (ça prend un peu de temps le load de gensim et du fichier brown.embedding, si ce dernier n’existe pas il sera créé pour accélérer le prochain lancement du main).
+Pour exécuter le projet, il faut se placer dans le répertoire src du projet depuis le terminal (il est indispensable pour que les imports marchent correctement) et lancer le fichier *main.py*. La fenêtre graphique s’ouvrira après quelques instants pour que les bibliothèques importées se chargent (ça prend un peu de temps le load de gensim et du fichier brown.embedding, si ce dernier n’existe pas il sera créé pour accélérer le prochain lancement du main).
 
 On peut ajouter en ligne de commande le paramètre optionnel *“-shell”* pour pouvoir lancer le *main* sans interface graphique.
 
@@ -44,7 +44,7 @@ En particulier Antoine s’est occupé du parsing de la question avec le but d�
 
 ## Fichiers caractérisant le projet
 
-Le code est composé de 3 fichiers chacun ayant un rôle spécifique : 
+Le code est composé de 3 fichiers sources (situés dans le répertoire src) chacun ayant un rôle spécifique : 
 - read_input.py → parsing de la phrase 
 - query_class.py → parcours de l’arbre DBPedia
 - main.py → répondre à la question en entrée
