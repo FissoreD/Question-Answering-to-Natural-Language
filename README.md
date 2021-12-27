@@ -161,6 +161,7 @@ Remarque : dans cet exemple, on voit que les bonnes réponses liées à Macron, 
 Là aussi il faut se dire que les “leaders” d’Italie contiennent Draghi, Mattarella, Casellati et Fico, mais on voit que parmi ces résultats, on trouve aussi Luigi Brugnaro.
 
 On peut voir alors la verbose liste pour essayer de comprendre pourquoi le programme nous suggère aussi le maire de Venice :
+
 ![Image4](./screenshoot/img4.png)
 
 Pour Luigi Brugnaro (le maire de Venice), on a trouvé un bon chemin car à part le premier step (leader party, country) qui sont peu similaires, après on a un 100 % avec président et name. 
