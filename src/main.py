@@ -109,15 +109,18 @@ class main:
 
 
 if __name__ == '__main__':
-    questions = ["What is the children, birthdate and birthplace of the major of the capital of France ?",
-                 "What is the birthdate and birthplace of founder of Microsoft ?",
+    questions = ["What are the birthdate, birthplace and spuse of the major of the capital of France ?",
+                 "What is the birthplace and the birthdate of Emmanuel_Macron ?",
+                 "What are the birthdate and birthplace of founder of Microsoft ?",
                  "What is the name of the president of the country with Venice ?",
                  "What is the date of Valentine's-Day ?",
-                 "What is the birthplace and the birthdate of Emmanuel_Macron ?"]
+                 "Who is the president of USA ?",
+                 "Who is the author of the Divine_Comedy ?"]
     if not '-shell' in argv:
         """ On crée pas défault l'interface graphique si l'utilisateur n'a pas spécifié la sortie sur le terminal """
 
         root = tk.Tk()
+        root.title("Question answering")
         mainPanel = tk.PanedWindow(root)
 
         underPanel = tk.PanedWindow(mainPanel)
