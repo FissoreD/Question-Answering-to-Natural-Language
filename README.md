@@ -170,6 +170,14 @@ Similairement avec Mario Draghi on a un 100 % sur country et name, mais on perd 
 
 Donc le programme aura tendance à croire que le maire Brugnaro soit aussi probablement correct que le président M. Draghi.
 
+## Améliorations possibles
+Parmi les amélioration qu’on pourrait apporter à notre projet, on pourrait :
+- Introduire un système de compréhension de questions posées en différentes langues (français, italien…)
+- Essayer de désambiguïser les mots comme Amazon avec des heuristiques, comme chercher l’info dans toutes les possibles significations de l’entité qui nous intéresse en ne prenant en compte que les meilleurs résultats
+- Comprendre “mieux” les questions en prenant en considération les Wh-Question en anglais, par exemple si on cherche un “Who” on pourrait se dire qu’on cherche un humain (même raisonnement pour “When”, “What”...)
+- Essayer de répondre à la [Q5] bien que ça soit plus dur par rapport au points ci-listés
+
+
 ## Conclusions
 
 Le projet nous a permis de bien comprendre la difficulté que les développeurs doivent affronter pour pouvoir “enseigner” aux machines les sens d’une langue naturelle. Les questions qu’aux humains semblent simples à comprendre en effet très souvent ne sont pas claires comme on peut le penser. 
