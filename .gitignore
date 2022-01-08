@@ -117,3 +117,4 @@ dmypy.json
 brown.embedding
 res.txt
 result.json
+.aux/
